@@ -7,7 +7,7 @@ services:
       - "127.0.0.1:8001:80"
     restart: unless-stopped
     volumes:
-      - /data/apps/editor/config:/user/share/nginx/html/conf
+      - /data/apps/editor/config:/usr/share/nginx/html/conf
   
   fairifier:
     image: dtlfair/fairifier
