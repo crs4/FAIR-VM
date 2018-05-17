@@ -74,7 +74,7 @@ setup_certbot() {
     apt-get -qq -y install certbot python-certbot-nginx
     ufw allow http
     ufw allow https
-    #certbot --nginx --non-interactive --agree-tos --email $EMAIL --no-eff-email --domain $VMHOST --redirect
+    certbot --nginx --non-interactive --agree-tos --email $EMAIL --no-eff-email --domain $VMHOST --redirect
 }
 
 install_docker() {
