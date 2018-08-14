@@ -100,6 +100,9 @@ configure_docker() {
     ln -s /data/apps/docker docker
     popd
     service docker start
+
+    # configure docker-compose
+    sed -r -i 's/"ES_URL=.+"/"ES_URL=https:\/\/$VMHOST\/searchserver"/' docker-compose.yml
 }
 
 setup_editor() {
@@ -143,6 +146,10 @@ setup_fairifier() {
     su ubuntu -c "docker-compose restart fairifier"
 }
 
+setup_search() {
+    docker exec search sh -c "sed -r -i 's/http:\/\/127.0.0.1:8080/https:\/\/$VMHOST\/search-api/' /var/www/html/submit/index.html"
+}
+
 setup_docker_images() {
     su ubuntu -c "docker-compose up -d"
     mv nginx/*.conf /data/apps/nginx
@@ -151,6 +158,7 @@ setup_docker_images() {
     setup_editor
     setup_fdp
     setup_fairifier
+    setup_search
 }
 
 install_packages

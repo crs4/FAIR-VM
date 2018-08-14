@@ -31,10 +31,11 @@ services:
     restart: unless-stopped
 
   search:
-    image: dtlfair/search
+    image: dtlfair/search:develop
     container_name: search
     ports:
       - "127.0.0.1:8004:80"
+      - "127.0.0.1:8084:8080"
       - "127.0.0.1:9200:9200"
     environment:
       - "ES_URL=http://localhost/searchserver"
