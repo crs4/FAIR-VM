@@ -1,8 +1,18 @@
 #!/bin/bash
 
-if [ "$#" -ne 2 ]; then
+if [ "$#" -lt 2 ]; then
     echo "Please provide the VM name and your email address as parameters:"
-    echo "$0 vm-name name@domain.tld"
+    echo "$0 vm-name name@domain.tld [purl]"
+    exit 1
+fi
+
+if [ "$#" -gt 3 ]; then
+    echo "Received more than 3 parameters, ignoring the following:"
+
+    until [ -z "$4" ]; do
+        echo $4
+        shift
+    done
     exit 1
 fi
 
@@ -20,6 +30,7 @@ fi
 
 VMNAME=$1
 EMAIL=$2
+PURL=$3
 VMHOST="$VMNAME.fair-dtls.surf-hosted.nl"
 
 host $VMHOST
@@ -112,12 +123,21 @@ setup_editor() {
 setup_fdp() {
     local config="webapps/ROOT/WEB-INF/classes/conf/fdpConfig.yml"
 
+    # configure storage
     docker exec fdp sh -c "sed -r -i 's/type: .+$/type: 1/' $config"
     docker exec fdp sh -c "sed -r -i 's/url: .+$/url: http:\/\/agraph:10035\/repositories\/fdp/' $config"
     docker exec fdp sh -c "sed -r -i 's/username: .+$/username: test/' $config"
     docker exec fdp sh -c "sed -r -i 's/password: .+$/password: xyzzy/' $config"
 
     curl -X PUT -u test:xyzzy http://localhost:10035/repositories/fdp
+
+    # configure search engine integration
+    docker exec fdp sh -c "sed -r -i 's/fdpSubmitUrl: .+$/fdpSubmitUrl: https:\/\/$VMHOST\/search-api\/fse\/submitFdp/' $config"
+
+    if [ -n "$PURL" ]; then
+        # configure persistence system, see https://stackoverflow.com/a/14191827
+        docker exec fdp sh -c "sed -r -i ':l;N;$!tl;N;s/(purl:\s+baseUrl: ).+/\1$PURL' $config"
+    fi
 
     su ubuntu -c "docker-compose restart fdp"
 }
