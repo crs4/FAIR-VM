@@ -134,9 +134,14 @@ setup_fdp() {
     # configure search engine integration
     docker exec fdp sh -c "sed -r -i 's/fdpSubmitUrl: .+$/fdpSubmitUrl: https:\/\/$VMHOST\/search-api\/fse\/submitFdp/' $config"
 
+    # multiline sed matching, see https://stackoverflow.com/a/14191827
     if [ -n "$PURL" ]; then
-        # configure persistence system, see https://stackoverflow.com/a/14191827
-        docker exec fdp sh -c "sed -r -i ':l;N;$!tl;N;s/(purl:\s+baseUrl: ).+/\1$PURL' $config"
+        # configure persistence system
+        docker exec fdp sh -c "sed -r -i ':l;N;$!tl;N;s/(purl:\s+baseUrl:) .+/\1 $PURL/' $config"
+    else
+        # fallback to the local address
+        # sed doesn't want to match on the shorthand digit notation (\d), so matching on the [0-9] group instead
+        docker exec fdp sh -c "sed -r -i ':l;N;$!tl;N;s/(pidSystem:\s+type:) [0-9]/\1 1/' $config"
     fi
 
     su ubuntu -c "docker-compose restart fdp"
