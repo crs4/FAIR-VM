@@ -22,7 +22,7 @@ services:
       - /data/apps/fairifier/config:/configuration
 
   fdp:
-    image: dtlfair/fdp
+    image: fairdata/fairdatapoint:august2018
     container_name: fdp
     ports:
       - "127.0.0.1:8003:8080"
