@@ -33,6 +33,8 @@ EMAIL=$2
 PURL=$3
 VMHOST="$VMNAME.fair-dtls.surf-hosted.nl"
 
+DOCKERCOMPOSE_VERSION="1.24.1"
+
 host $VMHOST
 if [ "$?" -ne 0 ]; then
     echo "DNS information for this host cannot be resolved. This will cause issues with
@@ -46,7 +48,7 @@ export LC_ALL="en_US.UTF-8"
 export LC_CTYPE="en_US.UTF-8"
 
 install_packages() {
-    apt-get -qq -y install apt-transport-https software-properties-common
+    apt-get -qq -y install software-properties-common
 }
 
 configure_hostname() {
@@ -65,7 +67,7 @@ mount_storage() {
 }
 
 setup_nginx() {
-    apt-get -qq -y install nginx python-software-properties
+    apt-get -qq -y install nginx-core
     echo "server {
         listen 80;
         server_name $VMHOST;
@@ -89,18 +91,18 @@ setup_certbot() {
 }
 
 install_docker() {
-    apt-get -qq -y install linux-image-extra-$(uname -r) linux-image-extra-virtual
+    apt-get -qq -y install gnupg-agent
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
     add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
     apt-get -qq update
-    apt-get -qq -y install docker-ce
+    apt-get -qq -y install docker-ce docker-ce-cli containerd.io
     usermod -aG docker ubuntu
 }
 
 install_docker_compose() {
-    curl -L https://github.com/docker/compose/releases/download/1.18.0/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
+    curl -L https://github.com/docker/compose/releases/download/$DOCKERCOMPOSE_VERSION/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
     chmod +x /usr/local/bin/docker-compose
-    curl -L https://raw.githubusercontent.com/docker/compose/1.18.0/contrib/completion/bash/docker-compose -o /etc/bash_completion.d/docker-compose
+    curl -L https://raw.githubusercontent.com/docker/compose/$DOCKERCOMPOSE_VERSION/contrib/completion/bash/docker-compose -o /etc/bash_completion.d/docker-compose
 }
 
 configure_docker() {
@@ -113,7 +115,7 @@ configure_docker() {
     service docker start
 
     # configure docker-compose
-    sed -r -i 's/"ES_URL=.+"/"ES_URL=https:\/\/$VMHOST\/searchserver"/' docker-compose.yml
+    sed -r -i "s%\"ES_URL=.+\"%\"ES_URL=https://$VMHOST/searchserver\"%" docker-compose.yml
 }
 
 setup_editor() {
@@ -132,7 +134,7 @@ setup_fdp() {
     curl -X PUT -u test:xyzzy http://localhost:10035/repositories/fdp
 
     # configure search engine integration
-    docker exec fdp sh -c "sed -r -i 's/fdpSubmitUrl: .+$/fdpSubmitUrl: https:\/\/$VMHOST\/search-api\/fse\/submitFdp/' $config"
+    docker exec fdp sh -c "sed -r -i 's%fdpSubmitUrl: .+$%fdpSubmitUrl: https://$VMHOST/search-api/fse/submitFdp%' $config"
 
     # multiline sed matching, see https://stackoverflow.com/a/14191827
     if [ -n "$PURL" ]; then
